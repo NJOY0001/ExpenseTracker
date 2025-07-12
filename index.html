@@ -58,10 +58,6 @@
                     <!-- Left Column -->
                     <div class="space-y-4">
                         <div>
-                            <label for="recordDate" class="block text-sm font-medium text-gray-700">วันที่บันทึกข้อมูล</label>
-                            <input type="text" id="recordDate" name="recordDate" readonly class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2">
-                        </div>                      
-                        <div>
                             <label for="supplierName" class="block text-sm font-medium text-gray-700">Supplier Name</label>
                             <input type="text" id="supplierName" name="supplierName" placeholder="ชื่อผู้ขาย" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
                         </div>
@@ -76,14 +72,26 @@
                                 <option>Petty Cash</option>
                             </select>
                         </div>
+                        <div>
+                            <label for="projectSubject" class="block text-sm font-medium text-gray-700">Project/Subject</label>
+                            <input type="text" id="projectSubject" name="projectSubject" placeholder="โครงการ / เรื่อง" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
                     </div>
                     <!-- Right Column -->
                     <div class="space-y-4">
                         <div>
+                            <label for="recordDate" class="block text-sm font-medium text-gray-700">วันที่บันทึกข้อมูล</label>
+                            <input type="text" id="recordDate" name="recordDate" readonly class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div>
+                            <label for="purchaseDate" class="block text-sm font-medium text-gray-700">วันที่ซื้อสินค้า</label>
+                            <input type="date" id="purchaseDate" name="purchaseDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div>
                             <label for="internalRefNo" class="block text-sm font-medium text-gray-700">Internal Reference No.</label>
                             <input type="text" id="internalRefNo" name="internalRefNo" readonly class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2">
                         </div>
-                        <!-- NEW Summary Box -->
+                        <!-- UPDATED Summary Box -->
                         <div class="bg-gray-50 rounded-lg p-4 text-sm border space-y-2 mt-2">
                             <h3 class="font-bold text-base mb-2">สรุปมูลค่า</h3>
                             <div class="flex justify-between"><span>รวมมูลค่าสินค้า</span><span id="totalAmount" class="font-medium">฿0.00</span></div>
@@ -92,6 +100,12 @@
                             <div class="flex justify-between"><span>รวม VAT 7%</span><span id="vatAmount" class="font-medium">฿0.00</span></div>
                             <div class="flex justify-between border-t pt-2 mt-2 text-base">
                                 <span class="font-bold">จำนวนเงินรวม</span><span id="grandTotal" class="font-bold text-blue-600">฿0.00</span>
+                            </div>
+                            <!-- NEW Item Count Summary -->
+                            <div class="flex justify-between border-t pt-2 mt-2 text-xs text-gray-500">
+                                <span>รายการ: <span id="totalItemCount">0</span></span>
+                                <span>มีVat: <span id="vatableItemCount">0</span></span>
+                                <span>ไม่มีVat: <span id="nonVatableItemCount">0</span></span>
                             </div>
                         </div>
                     </div>
@@ -125,7 +139,7 @@
 
                 <!-- Action Buttons -->
                 <div class="mt-8 flex justify-end space-x-4">
-                    <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg">ยกเลิก</button>
+                    <button id="cancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg">ยกเลิก</button>
                     <button id="saveBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center">
                         <span id="saveBtnText">บันทึกข้อมูล</span>
                         <div id="loader" class="loader hidden ml-2" style="width: 20px; height: 20px; border-width: 2px;"></div>
@@ -153,9 +167,11 @@
             const sidebar = document.getElementById('sidebar');
             const menuButton = document.getElementById('menu-button');
             const recordDateInput = document.getElementById('recordDate');
+            const purchaseDateInput = document.getElementById('purchaseDate');
             const itemsTableBody = document.querySelector('#itemsTable tbody');
             const addRowBtn = document.getElementById('addRowBtn');
             const saveBtn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
             const saveBtnText = document.getElementById('saveBtnText');
             const loader = document.getElementById('loader');
             
@@ -168,18 +184,22 @@
                     hour: '2-digit', minute: '2-digit', second: '2-digit'
                 });
             }
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
-
-            google.script.run
-                .withSuccessHandler(refNo => {
-                    document.getElementById('internalRefNo').value = refNo;
-                })
-                .withFailureHandler(error => {
-                    console.error('Could not get Ref No:', error);
-                    document.getElementById('internalRefNo').value = 'Error';
-                })
-                .generateInternalRefNo();
+            
+            function initializeForm() {
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+                purchaseDateInput.valueAsDate = new Date();
+                google.script.run
+                    .withSuccessHandler(refNo => {
+                        document.getElementById('internalRefNo').value = refNo;
+                    })
+                    .withFailureHandler(error => {
+                        console.error('Could not get Ref No:', error);
+                        document.getElementById('internalRefNo').value = 'Error';
+                    })
+                    .generateInternalRefNo();
+                addRow();
+            }
 
             let rowCount = 0;
 
@@ -225,9 +245,10 @@
             }
 
             function updateTotals() {
-                let totalAmount = 0, vatIncludedAmount = 0, vatExcludedAmount = 0, totalVat = 0;
+                let totalAmount = 0, vatIncludedAmount = 0, vatExcludedAmount = 0, totalVat = 0, vatableCount = 0;
+                const rows = itemsTableBody.querySelectorAll('tr');
 
-                itemsTableBody.querySelectorAll('tr').forEach(row => {
+                rows.forEach(row => {
                     const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
                     const price = parseFloat(row.querySelector('.item-price').value) || 0;
                     const isVatable = row.querySelector('.item-vatable').checked;
@@ -239,6 +260,7 @@
                         itemVat = itemTotal * 0.07;
                         vatIncludedAmount += itemTotal;
                         totalVat += itemVat;
+                        vatableCount++;
                     } else {
                         vatExcludedAmount += itemTotal;
                     }
@@ -255,10 +277,15 @@
                 document.getElementById('vatExcludedAmount').textContent = `฿${vatExcludedAmount.toFixed(2)}`;
                 document.getElementById('vatAmount').textContent = `฿${totalVat.toFixed(2)}`;
                 document.getElementById('grandTotal').textContent = `฿${grandTotal.toFixed(2)}`;
+
+                const totalCount = rows.length;
+                document.getElementById('totalItemCount').textContent = totalCount;
+                document.getElementById('vatableItemCount').textContent = vatableCount;
+                document.getElementById('nonVatableItemCount').textContent = totalCount - vatableCount;
             }
 
             addRowBtn.addEventListener('click', addRow);
-            addRow();
+            cancelBtn.addEventListener('click', resetForm);
 
             saveBtn.addEventListener('click', () => {
                 saveBtn.disabled = true;
@@ -270,7 +297,9 @@
                     timestamp: now.toISOString(),
                     recordDate: now.toLocaleDateString('th-TH'),
                     recordTime: now.toLocaleTimeString('th-TH'),
+                    purchaseDate: document.getElementById('purchaseDate').value,
                     paymentType: document.getElementById('paymentType').value,
+                    projectSubject: document.getElementById('projectSubject').value,
                     supplierName: document.getElementById('supplierName').value,
                     docNo: document.getElementById('docNo').value,
                     internalRefNo: document.getElementById('internalRefNo').value
@@ -332,12 +361,16 @@
             }
             
             function resetForm() {
-                ['supplierName', 'docNo'].forEach(id => document.getElementById(id).value = '');
+                ['supplierName', 'docNo', 'projectSubject'].forEach(id => document.getElementById(id).value = '');
+                purchaseDateInput.valueAsDate = new Date();
+                rowCount = 0; 
                 itemsTableBody.innerHTML = '';
-                addRow();
+                
                 google.script.run.withSuccessHandler(refNo => {
                     document.getElementById('internalRefNo').value = refNo;
                 }).generateInternalRefNo();
+                
+                addRow();
             }
             
             const modal = document.getElementById('notificationModal');
@@ -356,6 +389,9 @@
                 modal.classList.remove('hidden');
             }
             modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+            // Initialize the form on first load
+            initializeForm();
         });
     </script>
 </body>
