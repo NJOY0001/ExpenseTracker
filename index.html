@@ -7,73 +7,48 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: 'Sarabun', sans-serif;
-            background-color: #f0f2f5;
-        }
-        .sidebar {
-            transition: transform 0.3s ease-in-out;
-        }
-        .sidebar-hidden {
-            transform: translateX(-100%);
-        }
-        .content {
-            transition: margin-left 0.3s ease-in-out;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; }
+        .sidebar { transition: margin-left 0.3s ease-in-out; }
+        .main-content { transition: margin-left 0.3s ease-in-out; }
+        input[type="checkbox"] { transform: scale(1.2); }
+        .page-container { display: none; }
+        .page-container.active { display: block; }
+        .nav-link.active { background-color: #3b82f6; color: white; }
+        .sortable:hover { cursor: pointer; background-color: #f3f4f6; }
+        .sortable .sort-icon { display: none; }
+        .sortable.sort-asc .sort-icon.asc, .sortable.sort-desc .sort-icon.desc { display: inline-block; }
+        .original-input { @apply mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="bg-white text-gray-800 w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform md:relative md:translate-x-0 sidebar">
+        <aside id="sidebar" class="bg-white text-gray-800 w-64 space-y-6 py-7 px-2 flex-shrink-0 sidebar">
         <a href="#" class="text-2xl font-bold px-4 flex items-center space-x-2">
             <i data-lucide="book-marked"></i>
             <span>บันทึกรายจ่าย</span>
         </a>
         <nav>
-            <a href="#dashboard" class="flex items-center space-x-3 py-3 px-4 text-gray-700 rounded-lg hover:bg-gray-200">
-                <i data-lucide="layout-dashboard"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#expense-form" class="flex items-center space-x-3 py-3 px-4 bg-blue-500 text-white rounded-lg">
-                <i data-lucide="file-text"></i>
-                <span>Expense Form</span>
-            </a>
-            <a href="#inventory" class="flex items-center space-x-3 py-3 px-4 text-gray-700 rounded-lg hover:bg-gray-200">
-                <i data-lucide="boxes"></i>
-                <span>Inventory</span>
-            </a>
-            <a href="#report" class="flex items-center space-x-3 py-3 px-4 text-gray-700 rounded-lg hover:bg-gray-200">
-                <i data-lucide="bar-chart-3"></i>
-                <span>Report</span>
-            </a>
-            <a href="#setting" class="flex items-center space-x-3 py-3 px-4 text-gray-700 rounded-lg hover:bg-gray-200">
-                <i data-lucide="settings"></i>
-                <span>Setting</span>
-            </a>
+            <a href="#" data-target="page-expense-form" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg active"><i data-lucide="file-text"></i><span>Expense Form</span></a>
+            <a href="#" data-target="page-reports" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="bar-chart-3"></i><span>Reports</span></a>
+            <a href="#" data-target="page-inventory" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="boxes"></i><span>Inventory</span></a>
+            <a href="#" data-target="page-setting" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="settings"></i><span>Setting</span></a>
         </nav>
     </aside>
 
     <!-- Main Content -->
-    <div id="content" class="flex-1 flex flex-col overflow-hidden">
+    <div id="content" class="flex-1 flex flex-col overflow-hidden main-content">
         <header class="flex justify-between items-center p-4 bg-white border-b">
-            <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden">
-                <i data-lucide="menu"></i>
+            <!-- NEW Sidebar Toggle Button -->
+            <button id="sidebar-toggle" class="text-gray-600 hover:text-gray-800">
+                <i data-lucide="panel-left-close"></i>
             </button>
-            <h1 class="text-xl font-semibold">Expense Form</h1>
+            <h1 id="page-title" class="text-xl font-semibold">Expense Form</h1>
             <div class="flex items-center space-x-4">
                 <i data-lucide="bell" class="text-gray-600"></i>
                 <img src="https://placehold.co/40x40/E2E8F0/4A5568?text=User" alt="User Avatar" class="rounded-full">
@@ -81,289 +56,453 @@
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <h2 class="text-xl font-bold mb-6 border-b pb-4">ข้อมูลการจ่ายเงิน</h2>
-                
-                <!-- Header Form -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <!-- Left Column -->
-                    <div class="space-y-4">
-                        <div>
-                            <label for="recordDate" class="block text-sm font-medium text-gray-700">วันที่บันทึกข้อมูล</label>
-                            <input type="text" id="recordDate" name="recordDate" readonly class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+            <!-- Expense Form Page -->
+            <div id="page-expense-form" class="page-container active">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <input type="hidden" id="editModeRefNo" value="">
+                    <h2 id="form-title" class="text-xl font-bold mb-6 border-b pb-4">ข้อมูลการจ่ายเงิน</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                        <!-- UPDATED Left Column -->
+                        <div class="space-y-4">                            
+                            <div>
+                                <label for="purchaseDate" class="block text-sm font-medium text-gray-700">วันที่ซื้อสินค้า</label>
+                                <input type="date" id="purchaseDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="supplierName" class="block text-sm font-medium text-gray-700">Supplier Name</label>
+                                <input type="text" id="supplierName" placeholder="ชื่อผู้ขาย" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+                            </div>
+                            <div>
+                                <label for="docNo" class="block text-sm font-medium text-gray-700">Document No.</label>
+                                <input type="text" id="docNo" placeholder="หมายเลขบิล" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"></div>
+                            <div>
+                                <label for="paymentType" class="block text-sm font-medium text-gray-700">ประเภทการจ่ายเงิน</label>
+                                <select id="paymentType" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2"><option>Main account</option>
+                                <option>Petty Cash</option></select>
+                            </div>
+                            <div>
+                                <label for="projectSubject" class="block text-sm font-medium text-gray-700">Project/Subject</label>
+                                <input type="text" id="projectSubject" placeholder="โครงการ / เรื่อง" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
+                            </div>
                         </div>
-                        <div>
-                            <label for="paymentType" class="block text-sm font-medium text-gray-700">ประเภทการจ่ายเงิน</label>
-                            <select id="paymentType" name="paymentType" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
-                                <option>Main account</option>
-                                <option>Petty Cash</option>
-                            </select>
+                        <!-- Right Column -->
+                        <div class="space-y-3.5">
+                            <div>
+                                <label for="recordDate" class="block text-sm font-medium text-gray-700">วันที่บันทึกข้อมูล</label>
+                                <input type="text" id="recordDate" readonly class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-1">
+                            </div>
+                            <div>
+                                <label for="internalRefNo" class="block text-sm font-medium text-gray-700">Internal Reference No.</label>
+                                <input type="text" id="internalRefNo" readonly class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-1">
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-2 text-sm border space-y-2 mt-1 mb-0">
+                                <h3 class="font-bold text-base mb-1">สรุปมูลค่า</h3>
+                                <div class="flex justify-between">
+                                    <span>รวมมูลค่าสินค้า</span>
+                                    <span id="totalAmount" class="font-medium">฿0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>มูลค่าสินค้ามี VAT</span>
+                                    <span id="vatIncludedAmount" class="font-medium">฿0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>มูลค่าสินค้าไม่มี VAT</span><span id="vatExcludedAmount" class="font-medium">฿0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>รวม VAT 7%</span>
+                                    <span id="vatAmount" class="font-medium">฿0.00</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2 mt-2 text-base">
+                                    <span class="font-bold">จำนวนเงินรวม</span>
+                                    <span id="grandTotal" class="font-bold text-blue-600">฿0.00</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2 mt-2 text-xs text-gray-500">
+                                    <span>รายการ: <span id="totalItemCount">0</span>
+                                </span>
+                                    <span>มีVat: <span id="vatableItemCount">0</span>
+                                </span>
+                                    <span>ไม่มีVat: <span id="nonVatableItemCount">0</span>
+                                </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <!-- Right Column -->
-                    <div class="space-y-4">
-                        <div>
-                            <label for="supplierName" class="block text-sm font-medium text-gray-700">Supplier Name</label>
-                            <input type="text" id="supplierName" name="supplierName" placeholder="ชื่อผู้ขาย" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="docNo" class="block text-sm font-medium text-gray-700">Document No.</label>
-                            <input type="text" id="docNo" name="docNo" placeholder="หมายเลขบิล" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Items Table -->
-                <div class="overflow-x-auto">
-                    <table id="itemsTable" class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รายการ</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">จำนวน</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">หน่วย</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">ราคา/หน่วย</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">ราคารวม</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16"></th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <!-- Rows will be added dynamically here -->
-                        </tbody>
-                    </table>
-                </div>
-                <button id="addRowBtn" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2">
-                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                    <span>เพิ่มรายการ</span>
-                </button>
-
-                <!-- Totals -->
-                <div class="mt-6 flex justify-end">
-                    <div class="w-full md:w-1/3 space-y-2">
-                        <div class="flex justify-between">
-                            <span class="font-medium text-gray-600">ยอดรวม (Subtotal)</span>
-                            <span id="subtotal" class="font-bold text-gray-800">฿0.00</span>
-                        </div>
-                         <div class="flex justify-between">
-                            <span class="font-medium text-gray-600">ภาษี (VAT 7%)</span>
-                            <span id="vat" class="font-bold text-gray-800">฿0.00</span>
-                        </div>
-                        <div class="flex justify-between border-t pt-2">
-                            <span class="text-lg font-bold text-gray-900">ยอดรวมสุทธิ (Grand Total)</span>
-                            <span id="grandtotal" class="text-lg font-bold text-blue-600">฿0.00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="mt-8 flex justify-end space-x-4">
-                    <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg">ยกเลิก</button>
-                    <button id="saveBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center">
-                        <span id="saveBtnText">บันทึกข้อมูล</span>
-                        <div id="loader" class="loader hidden ml-2" style="width: 20px; height: 20px; border-width: 2px;"></div>
-                    </button>
+                    <div class="overflow-x-auto"><table id="itemsTable" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-2/5">รายการ</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[10%]">จำนวน</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[10%]">หน่วย</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">ราคา/หน่วย</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">ราคารวม</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">VAT 7%</th><th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase w-16">VAT</th><th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase w-16">ลบ</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div>
+                    <button id="addRowBtn" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2"><i data-lucide="plus-circle" class="w-5 h-5"></i><span>เพิ่มรายการ</span></button>
+                    <div class="mt-8 flex justify-end space-x-4"><button id="cancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg">ยกเลิก</button><button id="saveBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center"><span id="saveBtnText">บันทึกข้อมูล</span><div id="loader" class="loader hidden ml-2" style="width: 20px; height: 20px; border-width: 2px;"></div></button></div>
                 </div>
             </div>
+
+            <!-- Reports Page -->
+            <div id="page-reports" class="page-container">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-bold mb-6 border-b pb-4">รายงานการซื้อ (By Bill)</h2>
+                    <div class="flex flex-wrap items-end gap-4 mb-6">
+                        <div><label for="reportStartDate" class="block text-sm font-medium text-gray-700">วันที่เริ่มต้น</label><input type="date" id="reportStartDate" class="original-input"></div>
+                        <div><label for="reportEndDate" class="block text-sm font-medium text-gray-700">วันที่สิ้นสุด</label><input type="date" id="reportEndDate" class="original-input"></div>
+                        <button id="generateReportBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="search" class="w-5 h-5 mr-2"></i><span>สร้างรายงาน</span></button>
+                        <div class="flex-grow"></div>
+                        <button id="exportPdfBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center hidden"><i data-lucide="file-text" class="w-5 h-5 mr-2"></i><span>Export to PDF</span></button>
+                        <button id="exportExcelBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center hidden"><i data-lucide="file-spreadsheet" class="w-5 h-5 mr-2"></i><span>Export to Excel</span></button>
+                        <div id="reportLoader" class="loader hidden ml-4" style="width: 30px; height: 30px; border-width: 3px;"></div>
+                    </div>
+                    <div id="reportResult" class="overflow-x-auto">
+                        <p id="reportPlaceholder" class="text-center text-gray-500 py-8">กรุณาเลือกช่วงวันที่และกด "สร้างรายงาน"</p>
+                        <table id="reportTable" class="min-w-full divide-y divide-gray-200 hidden">
+                            <thead class="bg-gray-50"><tr><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="buyDate">Buy Date <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="payBy">Pay by <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="internalNo">Internal No. <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="supplierName">Supplier Name <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="docNo">Doc.No <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="itemCount"># <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="amount">Amount <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="vat">Vat7% <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="totalAmount">Total Amount <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+                            <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                            <tfoot class="bg-gray-100"><tr><th colspan="6" class="px-4 py-3 text-right text-sm font-bold">Total:</th><th id="reportTotalAmount" class="px-4 py-3 text-right text-sm font-bold"></th><th id="reportTotalVat" class="px-4 py-3 text-right text-sm font-bold"></th><th id="reportGrandTotal" class="px-4 py-3 text-right text-sm font-bold"></th><th></th></tr></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="page-inventory" class="page-container"><div class="bg-white p-6 rounded-xl shadow-lg">Inventory Page</div></div>
+            <div id="page-setting" class="page-container"><div class="bg-white p-6 rounded-xl shadow-lg">Setting Page</div></div>
         </main>
     </div>
-    
-    <!-- Modal for notifications -->
-    <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/3 text-center">
-            <div id="modalIcon"></div>
-            <h3 id="modalTitle" class="text-xl font-bold mt-4"></h3>
-            <p id="modalMessage" class="text-gray-600 mt-2"></p>
-            <button id="modalCloseBtn" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">ตกลง</button>
-        </div>
-    </div>
+    <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50"><div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/3 text-center"><div id="modalIcon"></div><h3 id="modalTitle" class="text-xl font-bold mt-4"></h3><p id="modalMessage" class="text-gray-600 mt-2"></p><button id="modalCloseBtn" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">ตกลง</button></div></div>
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50"><div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/3"><h3 id="confirmTitle" class="text-lg font-bold">ยืนยันการกระทำ</h3><p id="confirmMessage" class="text-gray-600 mt-2 py-4"></p><div class="flex justify-end space-x-4 mt-4"><button id="confirmCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">ยกเลิก</button><button id="confirmOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">ยืนยัน</button></div></div></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
+            const { jsPDF } = window.jspdf;
             
+            // --- Global Elements & State ---
+            const pageTitle = document.getElementById('page-title');
+            let reportDataCache = [];
+            let currentSort = { key: 'buyDate', order: 'desc' };
+
+            // --- Sidebar Toggle ---
             const sidebar = document.getElementById('sidebar');
-            const menuButton = document.getElementById('menu-button');
-            menuButton.addEventListener('click', () => {
-                sidebar.classList.toggle('sidebar-hidden');
-            });
-
-            const recordDateInput = document.getElementById('recordDate');
-            function updateDateTime() {
-                const now = new Date();
-                const thaiDateTime = now.toLocaleString('th-TH', {
-                    year: 'numeric', month: 'long', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
-                recordDateInput.value = thaiDateTime;
-            }
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
-
-            const itemsTableBody = document.querySelector('#itemsTable tbody');
-            const addRowBtn = document.getElementById('addRowBtn');
-            let rowCount = 0;
-
-            function addRow() {
-                rowCount++;
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${rowCount}</td>
-                    <td class="px-4 py-2"><input type="text" placeholder="รายละเอียด" class="item-desc w-full border-gray-300 rounded-md p-1"></td>
-                    <td class="px-4 py-2"><input type="number" value="1" min="0" class="item-qty w-full border-gray-300 rounded-md p-1 text-right"></td>
-                    <td class="px-4 py-2"><input type="text" placeholder="ชิ้น" class="item-unit w-full border-gray-300 rounded-md p-1"></td>
-                    <td class="px-4 py-2"><input type="number" placeholder="0.00" min="0" step="0.01" class="item-price w-full border-gray-300 rounded-md p-1 text-right"></td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-800 font-medium text-right item-total">฿0.00</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-center">
-                        <button class="delete-row text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
-                    </td>
-                `;
-                itemsTableBody.appendChild(row);
-                lucide.createIcons();
-                attachRowListeners(row);
-            }
-
-            function attachRowListeners(row) {
-                row.querySelector('.delete-row').addEventListener('click', () => {
-                    row.remove();
-                    updateTotals();
-                    updateRowNumbers();
-                });
-                row.querySelectorAll('.item-qty, .item-price').forEach(input => {
-                    input.addEventListener('input', updateTotals);
-                });
-            }
-
-            function updateRowNumbers() {
-                const rows = itemsTableBody.querySelectorAll('tr');
-                rows.forEach((row, index) => {
-                    row.cells[0].textContent = index + 1;
-                });
-                rowCount = rows.length;
-            }
-
-            function updateTotals() {
-                let subtotal = 0;
-                itemsTableBody.querySelectorAll('tr').forEach(row => {
-                    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-                    const price = parseFloat(row.querySelector('.item-price').value) || 0;
-                    const total = qty * price;
-                    row.querySelector('.item-total').textContent = `฿${total.toFixed(2)}`;
-                    subtotal += total;
-                });
-                const vat = subtotal * 0.07;
-                const grandtotal = subtotal + vat;
-                document.getElementById('subtotal').textContent = `฿${subtotal.toFixed(2)}`;
-                document.getElementById('vat').textContent = `฿${vat.toFixed(2)}`;
-                document.getElementById('grandtotal').textContent = `฿${grandtotal.toFixed(2)}`;
-            }
-
-            addRowBtn.addEventListener('click', addRow);
-            addRow(); // เริ่มต้นด้วย 1 แถว
-
-            // --- Form Submission using google.script.run ---
-            const saveBtn = document.getElementById('saveBtn');
-            const saveBtnText = document.getElementById('saveBtnText');
-            const loader = document.getElementById('loader');
-
-            saveBtn.addEventListener('click', () => {
-                saveBtn.disabled = true;
-                saveBtnText.classList.add('hidden');
-                loader.classList.remove('hidden');
-
-                const now = new Date();
-                const headerData = {
-                    timestamp: now.toISOString(),
-                    recordDate: now.toLocaleDateString('th-TH'),
-                    recordTime: now.toLocaleTimeString('th-TH'),
-                    paymentType: document.getElementById('paymentType').value,
-                    supplierName: document.getElementById('supplierName').value,
-                    docNo: document.getElementById('docNo').value,
-                };
-                
-                if (!headerData.supplierName || !headerData.docNo) {
-                    showNotification('error', 'ข้อมูลไม่ครบถ้วน', 'กรุณากรอก Supplier Name และ Document No.');
-                    resetSaveButton();
-                    return;
-                }
-
-                const items = [];
-                const rows = itemsTableBody.querySelectorAll('tr');
-                if (rows.length === 0) {
-                    showNotification('error', 'ไม่มีรายการ', 'กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ');
-                    resetSaveButton();
-                    return;
-                }
-                rows.forEach(row => {
-                    const itemDesc = row.querySelector('.item-desc').value;
-                    const itemQty = parseFloat(row.querySelector('.item-qty').value) || 0;
-                    if(itemDesc && itemQty > 0) {
-                        items.push({
-                            description: itemDesc,
-                            quantity: itemQty,
-                            unit: row.querySelector('.item-unit').value,
-                            unitPrice: parseFloat(row.querySelector('.item-price').value) || 0,
-                        });
-                    }
-                });
-                
-                if (items.length === 0) {
-                    showNotification('error', 'ข้อมูลรายการไม่ถูกต้อง', 'กรุณาตรวจสอบรายละเอียดและจำนวนของสินค้า');
-                    resetSaveButton();
-                    return;
-                }
-
-                const data = { header: headerData, items: items };
-
-                google.script.run
-                    .withSuccessHandler(response => {
-                        if (response.status === 'success') {
-                            showNotification('success', 'บันทึกสำเร็จ!', response.message);
-                            resetForm();
-                        } else {
-                            showNotification('error', 'เกิดข้อผิดพลาด!', response.message);
-                        }
-                        resetSaveButton();
-                    })
-                    .withFailureHandler(error => {
-                        console.error('Apps Script Execution Error:', error);
-                        showNotification('error', 'เกิดข้อผิดพลาดรุนแรง!', `ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: ${error.message}`);
-                        resetSaveButton();
-                    })
-                    .saveData(data); // เรียกใช้ฟังก์ชัน saveData ใน Code.gs
-            });
-            
-            function resetSaveButton() {
-                saveBtn.disabled = false;
-                saveBtnText.classList.remove('hidden');
-                loader.classList.add('hidden');
-            }
-            
-            function resetForm() {
-                document.getElementById('supplierName').value = '';
-                document.getElementById('docNo').value = '';
-                itemsTableBody.innerHTML = '';
-                addRow();
-                updateTotals();
-            }
-            
-            const modal = document.getElementById('notificationModal');
-            const modalIcon = document.getElementById('modalIcon');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalMessage = document.getElementById('modalMessage');
-            const modalCloseBtn = document.getElementById('modalCloseBtn');
-            
-            function showNotification(type, title, message) {
-                modalTitle.textContent = title;
-                modalMessage.textContent = message;
-                if (type === 'success') {
-                    modalIcon.innerHTML = `<i data-lucide="check-circle" class="w-16 h-16 text-green-500 mx-auto"></i>`;
+            const content = document.getElementById('content');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            sidebarToggle.addEventListener('click', () => {
+                const isCollapsed = sidebar.style.marginLeft === '-16rem';
+                if (isCollapsed) {
+                    sidebar.style.marginLeft = '0';
+                    content.style.marginLeft = '0rem';
+                    sidebarToggle.innerHTML = '<i data-lucide="panel-left-close"></i>';
                 } else {
-                    modalIcon.innerHTML = `<i data-lucide="x-circle" class="w-16 h-16 text-red-500 mx-auto"></i>`;
+                    sidebar.style.marginLeft = '-16rem';
+                    content.style.marginLeft = '0';
+                    sidebarToggle.innerHTML = '<i data-lucide="panel-right-close"></i>';
                 }
                 lucide.createIcons();
-                modal.classList.remove('hidden');
+            });
+
+
+            // --- Page Navigation ---
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    const targetId = link.dataset.target;
+                    document.querySelectorAll('.page-container').forEach(p => p.classList.toggle('active', p.id === targetId));
+                    document.querySelectorAll('.nav-link').forEach(n => n.classList.toggle('active', n === link));
+                    pageTitle.textContent = link.querySelector('span').textContent;
+                    if (targetId !== 'page-expense-form') { expenseForm.reset(); }
+                });
+            });
+
+            // --- Expense Form Logic ---
+            const expenseForm = {
+                formTitle: document.getElementById('form-title'),
+                editModeRefNoInput: document.getElementById('editModeRefNo'),
+                recordDateInput: document.getElementById('recordDate'),
+                purchaseDateInput: document.getElementById('purchaseDate'),
+                itemsTableBody: document.querySelector('#itemsTable tbody'),
+                addRowBtn: document.getElementById('addRowBtn'),
+                saveBtn: document.getElementById('saveBtn'),
+                cancelBtn: document.getElementById('cancelBtn'),
+                saveBtnText: document.getElementById('saveBtnText'),
+                loader: document.getElementById('loader'),
+                rowCount: 0,
+                
+                initialize() {
+                    setInterval(() => this.updateDateTime(), 1000);
+                    this.reset();
+                    this.addRowBtn.addEventListener('click', () => this.addRow());
+                    this.cancelBtn.addEventListener('click', () => this.reset());
+                    this.saveBtn.addEventListener('click', () => this.save());
+                },
+                updateDateTime() { if (!this.editModeRefNoInput.value) this.recordDateInput.value = new Date().toLocaleString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); },
+                addRow(item = {}) {
+                    this.rowCount++;
+                    const row = this.itemsTableBody.insertRow();
+                    row.innerHTML = `<td class="px-2 py-2 text-sm text-gray-500">${this.rowCount}</td><td class="px-4 py-2"><input type="text" value="${item.description || ''}" placeholder="รายละเอียด" class="original-input item-desc"></td><td class="px-2 py-2"><input type="number" value="${item.quantity || 1}" min="0" class="original-input calc-input item-qty text-right"></td><td class="px-2 py-2"><input type="text" value="${item.unit || ''}" placeholder="ชิ้น" class="original-input item-unit"></td><td class="px-2 py-2"><input type="number" value="${item.unitPrice || ''}" placeholder="0.00" min="0" step="0.01" class="original-input calc-input item-price text-right"></td><td class="px-2 py-2 text-sm text-right item-total">฿0.00</td><td class="px-2 py-2 text-sm text-right item-vat">฿0.00</td><td class="px-2 py-2 text-center"><input type="checkbox" class="calc-input item-vatable h-5 w-5 text-blue-600" ${item.isVatable !== false ? 'checked' : ''}></td><td class="px-2 py-2 text-center"><button type="button" class="delete-row text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button></td>`;
+                    lucide.createIcons();
+                    row.querySelector('.delete-row').addEventListener('click', e => { e.currentTarget.closest('tr').remove(); this.updateRowNumbers(); this.updateTotals(); });
+                    row.querySelectorAll('.calc-input').forEach(input => input.addEventListener('input', () => this.updateTotals()));
+                    this.updateTotals();
+                },
+                updateRowNumbers() {
+                    this.itemsTableBody.querySelectorAll('tr').forEach((row, index) => { row.cells[0].textContent = index + 1; });
+                    this.rowCount = this.itemsTableBody.rows.length;
+                },
+                updateTotals() {
+                    let total = 0, vatIncluded = 0, vatExcluded = 0, totalVat = 0, vatableCount = 0;
+                    const rows = this.itemsTableBody.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                        const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                        const isVatable = row.querySelector('.item-vatable').checked;
+                        const itemTotal = qty * price;
+                        let itemVat = 0;
+                        if (isVatable) { itemVat = itemTotal * 0.07; vatIncluded += itemTotal; totalVat += itemVat; vatableCount++; } else { vatExcluded += itemTotal; }
+                        total += itemTotal;
+                        row.querySelector('.item-total').textContent = `฿${itemTotal.toFixed(2)}`;
+                        row.querySelector('.item-vat').textContent = `฿${itemVat.toFixed(2)}`;
+                    });
+                    document.getElementById('totalAmount').textContent = `฿${total.toFixed(2)}`;
+                    document.getElementById('vatIncludedAmount').textContent = `฿${vatIncluded.toFixed(2)}`;
+                    document.getElementById('vatExcludedAmount').textContent = `฿${vatExcluded.toFixed(2)}`;
+                    document.getElementById('vatAmount').textContent = `฿${totalVat.toFixed(2)}`;
+                    document.getElementById('grandTotal').textContent = `฿${(total + totalVat).toFixed(2)}`;
+                    document.getElementById('totalItemCount').textContent = rows.length;
+                    document.getElementById('vatableItemCount').textContent = vatableCount;
+                    document.getElementById('nonVatableItemCount').textContent = rows.length - vatableCount;
+                },
+                reset() {
+                    this.formTitle.textContent = 'ข้อมูลการจ่ายเงิน';
+                    this.saveBtnText.textContent = 'บันทึกข้อมูล';
+                    this.editModeRefNoInput.value = '';
+                    ['supplierName', 'docNo', 'projectSubject'].forEach(id => document.getElementById(id).value = '');
+                    this.purchaseDateInput.valueAsDate = new Date();
+                    this.rowCount = 0; this.itemsTableBody.innerHTML = '';
+                    google.script.run.withSuccessHandler(refNo => { document.getElementById('internalRefNo').value = refNo; }).generateInternalRefNo();
+                    this.addRow();
+                },
+                loadForEdit(data) {
+                    this.reset();
+                    this.formTitle.textContent = `แก้ไขบิล: ${data.header.internalRefNo}`;
+                    this.saveBtnText.textContent = 'อัปเดตข้อมูล';
+                    this.editModeRefNoInput.value = data.header.internalRefNo;
+                    
+                    document.getElementById('internalRefNo').value = data.header.internalRefNo;
+                    document.getElementById('purchaseDate').value = data.header.purchaseDate;
+                    document.getElementById('supplierName').value = data.header.supplierName;
+                    document.getElementById('docNo').value = data.header.docNo;
+                    document.getElementById('paymentType').value = data.header.paymentType;
+                    document.getElementById('projectSubject').value = data.header.projectSubject;
+                    
+                    this.itemsTableBody.innerHTML = '';
+                    this.rowCount = 0;
+                    data.items.forEach(item => this.addRow(item));
+                    document.querySelector('.nav-link[data-target="page-expense-form"]').click();
+                },
+                save() {
+                    const isUpdate = !!this.editModeRefNoInput.value;
+                    const supplierName = document.getElementById('supplierName').value;
+                    const docNo = document.getElementById('docNo').value;
+                    
+                    if (!supplierName || !docNo) { showNotification('error', 'ข้อมูลไม่ครบถ้วน', 'กรุณากรอก Supplier Name และ Document No.'); return; }
+                    
+                    this.saveBtn.disabled = true; this.saveBtnText.classList.add('hidden'); this.loader.classList.remove('hidden');
+
+                    const proceedWithSave = () => {
+                        const headerData = {
+                            timestamp: new Date().toISOString(), recordDate: new Date().toLocaleDateString('th-TH'), recordTime: new Date().toLocaleTimeString('th-TH'),
+                            purchaseDate: this.purchaseDateInput.value, paymentType: document.getElementById('paymentType').value,
+                            projectSubject: document.getElementById('projectSubject').value, supplierName: supplierName,
+                            docNo: docNo, internalRefNo: document.getElementById('internalRefNo').value
+                        };
+                        const items = Array.from(this.itemsTableBody.rows).map(row => ({
+                            description: row.querySelector('.item-desc').value, quantity: parseFloat(row.querySelector('.item-qty').value) || 0,
+                            unit: row.querySelector('.item-unit').value, unitPrice: parseFloat(row.querySelector('.item-price').value) || 0,
+                            isVatable: row.querySelector('.item-vatable').checked
+                        })).filter(item => item.description && item.quantity > 0);
+                        if (items.length === 0) { showNotification('error', 'ไม่มีรายการ', 'กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ'); this.resetSaveButton(); return; }
+                        
+                        const serverFunction = isUpdate ? 'updateData' : 'saveData';
+                        google.script.run
+                            .withSuccessHandler(res => { if (res.status === 'success') { showNotification('success', isUpdate ? 'อัปเดตสำเร็จ!' : 'บันทึกสำเร็จ!', res.message); this.reset(); if(isUpdate) { document.querySelector('.nav-link[data-target="page-reports"]').click(); reports.generate(); } } else { showNotification('error', 'เกิดข้อผิดพลาด!', res.message); } this.resetSaveButton(); })
+                            .withFailureHandler(err => { showNotification('error', 'เกิดข้อผิดพลาดรุนแรง!', err.message); this.resetSaveButton(); })
+                            [serverFunction]({ header: headerData, items: items });
+                    };
+
+                    if (!isUpdate) {
+                        google.script.run
+                            .withSuccessHandler(isDuplicate => {
+                                if (isDuplicate) {
+                                    showNotification('error', 'บิลซ้ำ', 'มีบิลจาก Supplier นี้ด้วย Document No. นี้อยู่แล้ว');
+                                    this.resetSaveButton();
+                                } else {
+                                    proceedWithSave();
+                                }
+                            })
+                            .withFailureHandler(err => { showNotification('error', 'ตรวจสอบบิลซ้ำไม่สำเร็จ', err.message); this.resetSaveButton(); })
+                            .checkDuplicateBill(supplierName, docNo, '');
+                    } else {
+                        proceedWithSave();
+                    }
+                },
+                resetSaveButton() { this.saveBtn.disabled = false; this.saveBtnText.classList.remove('hidden'); this.loader.classList.add('hidden'); }
+            };
+            expenseForm.initialize();
+
+            // --- Reports Logic ---
+            const reports = {
+                startDateInput: document.getElementById('reportStartDate'),
+                endDateInput: document.getElementById('reportEndDate'),
+                generateBtn: document.getElementById('generateReportBtn'),
+                exportPdfBtn: document.getElementById('exportPdfBtn'),
+                exportExcelBtn: document.getElementById('exportExcelBtn'),
+                loader: document.getElementById('reportLoader'),
+                table: document.getElementById('reportTable'),
+                tableBody: document.getElementById('reportTableBody'),
+                placeholder: document.getElementById('reportPlaceholder'),
+                
+                initialize() {
+                    const today = new Date();
+                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    this.startDateInput.valueAsDate = firstDayOfMonth;
+                    this.endDateInput.valueAsDate = today;
+                    this.generateBtn.addEventListener('click', () => this.generate());
+                    this.exportPdfBtn.addEventListener('click', () => this.exportToPdf());
+                    this.exportExcelBtn.addEventListener('click', () => this.exportToExcel());
+                    document.querySelectorAll('#reportTable .sortable').forEach(th => th.addEventListener('click', () => this.sort(th.dataset.sort)));
+                    this.tableBody.addEventListener('click', e => {
+                        const editBtn = e.target.closest('.edit-btn');
+                        const deleteBtn = e.target.closest('.delete-btn');
+                        if (editBtn) this.handleEdit(editBtn.dataset.internalNo);
+                        if (deleteBtn) this.handleDelete(deleteBtn.dataset.internalNo);
+                    });
+                },
+                generate() {
+                    const startDate = this.startDateInput.value, endDate = this.endDateInput.value;
+                    if (!startDate || !endDate) { showNotification('error', 'ข้อมูลไม่ครบถ้วน', 'กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด'); return; }
+                    this.loader.classList.remove('hidden'); this.table.classList.add('hidden');
+                    this.placeholder.textContent = 'กำลังดึงข้อมูล...'; this.placeholder.classList.remove('hidden');
+                    [this.exportPdfBtn, this.exportExcelBtn].forEach(b => b.classList.add('hidden'));
+
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            this.loader.classList.add('hidden');
+                            if (res.status === 'success') {
+                                reportDataCache = res.data;
+                                if (reportDataCache.length > 0) { this.sort(currentSort.key, true); [this.exportPdfBtn, this.exportExcelBtn].forEach(b => b.classList.remove('hidden')); } 
+                                else { this.placeholder.textContent = 'ไม่พบข้อมูลในข่วงวันที่ที่เลือก'; this.table.classList.add('hidden'); }
+                            } else { showNotification('error', 'เกิดข้อผิดพลาด', res.message); this.placeholder.textContent = 'เกิดข้อผิดพลาดในการดึงข้อมูล'; }
+                        })
+                        .withFailureHandler(err => { this.loader.classList.add('hidden'); showNotification('error', 'เกิดข้อผิดพลาดรุนแรง', err.message); this.placeholder.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ'; })
+                        .getPurchaseReportData(startDate, endDate);
+                },
+                render(data) {
+                    this.tableBody.innerHTML = '';
+                    if (data.length === 0) { this.placeholder.textContent = 'ไม่พบข้อมูลในข่วงวันที่ที่เลือก'; this.placeholder.classList.remove('hidden'); this.table.classList.add('hidden'); return; }
+                    this.placeholder.classList.add('hidden'); this.table.classList.remove('hidden');
+                    let totalAmount = 0, totalVat = 0, grandTotal = 0;
+                    data.forEach(item => {
+                        const row = this.tableBody.insertRow();
+                        row.innerHTML = `<td class="px-4 py-2 text-sm">${item.buyDate}</td><td class="px-4 py-2 text-sm">${item.payBy}</td><td class="px-4 py-2 text-sm">${item.internalNo}</td><td class="px-4 py-2 text-sm">${item.supplierName}</td><td class="px-4 py-2 text-sm">${item.docNo}</td><td class="px-4 py-2 text-sm text-right">${item.itemCount}</td><td class="px-4 py-2 text-sm text-right">${item.amount.toFixed(2)}</td><td class="px-4 py-2 text-sm text-right">${item.vat.toFixed(2)}</td><td class="px-4 py-2 text-sm text-right font-medium">${item.totalAmount.toFixed(2)}</td><td class="px-4 py-2 text-center text-sm"><button class="edit-btn text-blue-600 hover:text-blue-800 p-1" data-internal-no="${item.internalNo}"><i data-lucide="edit"></i></button><button class="delete-btn text-red-600 hover:text-red-800 p-1" data-internal-no="${item.internalNo}"><i data-lucide="trash-2"></i></button></td>`;
+                        totalAmount += item.amount; totalVat += item.vat; grandTotal += item.totalAmount;
+                    });
+                    lucide.createIcons();
+                    document.getElementById('reportTotalAmount').textContent = totalAmount.toFixed(2);
+                    document.getElementById('reportTotalVat').textContent = totalVat.toFixed(2);
+                    document.getElementById('reportGrandTotal').textContent = grandTotal.toFixed(2);
+                },
+                sort(key, keepOrder = false) {
+                    if (!keepOrder) { currentSort.order = (currentSort.key === key && currentSort.order === 'asc') ? 'desc' : 'asc'; }
+                    currentSort.key = key;
+                    reportDataCache.sort((a, b) => {
+                        const valA = a[key], valB = b[key], order = currentSort.order === 'asc' ? 1 : -1;
+                        if (typeof valA === 'string') return valA.localeCompare(valB) * order;
+                        return (valA - valB) * order;
+                    });
+                    document.querySelectorAll('#reportTable .sortable').forEach(th => {
+                        th.classList.remove('sort-asc', 'sort-desc');
+                        if (th.dataset.sort === key) th.classList.add(currentSort.order === 'asc' ? 'sort-asc' : 'sort-desc');
+                    });
+                    this.render(reportDataCache);
+                },
+                handleEdit(internalNo) {
+                    showNotification('info', 'กำลังโหลดข้อมูล...', `กำลังโหลดข้อมูลสำหรับบิล ${internalNo}`);
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            if (res.status === 'success') { expenseForm.loadForEdit(res.data); } 
+                            else { showNotification('error', 'ผิดพลาด', res.message); }
+                        })
+                        .withFailureHandler(err => showNotification('error', 'ผิดพลาด', err.message))
+                        .getBillDetails(internalNo);
+                },
+                handleDelete(internalNo) {
+                    showConfirm('ยืนยันการลบ', `คุณต้องการลบบิล ${internalNo} และรายการทั้งหมดในบิลนี้ใช่หรือไม่?`, () => {
+                        showNotification('info', 'กำลังลบ...', `กำลังลบบิล ${internalNo}`);
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                if (res.status === 'success') { showNotification('success', 'ลบสำเร็จ', res.message); this.generate(); } 
+                                else { showNotification('error', 'ผิดพลาด', res.message); }
+                            })
+                            .withFailureHandler(err => showNotification('error', 'ผิดพลาด', err.message))
+                            .deleteBill(internalNo);
+                    });
+                },
+                exportToPdf() {
+                    const doc = new jsPDF();
+                    // IMPORTANT: Ensure the font is loaded and registered before use.
+                    // This is a simplified example. For production, you might need to handle font loading more robustly.
+                    doc.addFont('https://cdnjs.cloudflare.com/ajax/libs/Sarabun/0.1.0/Sarabun-Regular.ttf', 'Sarabun', 'normal');
+                    doc.setFont('Sarabun');
+                    
+                    const startDate = new Date(this.startDateInput.value).toLocaleDateString('th-TH');
+                    const endDate = new Date(this.endDateInput.value).toLocaleDateString('th-TH');
+                    doc.text(`รายงานการซื้อ (By Bill) วันที่ ${startDate} - ${endDate}`, 14, 15);
+                    
+                    const head = [['Buy Date', 'Pay by', 'Internal No.', 'Supplier', 'Doc.No', '#', 'Amount', 'Vat7%', 'Total']];
+                    const body = reportDataCache.map(item => [item.buyDate, item.payBy, item.internalNo, item.supplierName, item.docNo, item.itemCount, item.amount.toFixed(2), item.vat.toFixed(2), item.totalAmount.toFixed(2)]);
+                    
+                    doc.autoTable({
+                        head: head,
+                        body: body,
+                        startY: 20,
+                        styles: { font: 'Sarabun', fontStyle: 'normal' },
+                        headStyles: { fontStyle: 'bold' }
+                    });
+                    doc.save('report.pdf');
+                },
+                exportToExcel() {
+                    const headers = {
+                        buyDate: 'Buy Date', payBy: 'Pay by', internalNo: 'Internal No.', 
+                        supplierName: 'Supplier Name', docNo: 'Doc.No', itemCount: '# Items', 
+                        amount: 'Amount', vat: 'Vat7%', totalAmount: 'Total Amount'
+                    };
+                    const dataToExport = reportDataCache.map(item => ({
+                        [headers.buyDate]: item.buyDate,
+                        [headers.payBy]: item.payBy,
+                        [headers.internalNo]: item.internalNo,
+                        [headers.supplierName]: item.supplierName,
+                        [headers.docNo]: item.docNo,
+                        [headers.itemCount]: item.itemCount,
+                        [headers.amount]: item.amount,
+                        [headers.vat]: item.vat,
+                        [headers.totalAmount]: item.totalAmount
+                    }));
+
+                    const ws = XLSX.utils.json_to_sheet(dataToExport);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Report");
+                    XLSX.writeFile(wb, "PurchaseReport.xlsx");
+                }
+            };
+            reports.initialize();
+
+            // --- Modals ---
+            const notificationModal = { element: document.getElementById('notificationModal'), icon: document.getElementById('modalIcon'), title: document.getElementById('modalTitle'), message: document.getElementById('modalMessage'), closeBtn: document.getElementById('modalCloseBtn') };
+            notificationModal.closeBtn.addEventListener('click', () => notificationModal.element.classList.add('hidden'));
+            function showNotification(type, title, message) {
+                notificationModal.title.textContent = title; notificationModal.message.textContent = message;
+                notificationModal.icon.innerHTML = (type === 'success') ? `<i data-lucide="check-circle" class="w-16 h-16 text-green-500 mx-auto"></i>` : (type === 'info') ? `<i data-lucide="info" class="w-16 h-16 text-blue-500 mx-auto"></i>` : `<i data-lucide="x-circle" class="w-16 h-16 text-red-500 mx-auto"></i>`;
+                lucide.createIcons(); notificationModal.element.classList.remove('hidden');
             }
-            modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            const confirmModal = { element: document.getElementById('confirmModal'), title: document.getElementById('confirmTitle'), message: document.getElementById('confirmMessage'), cancelBtn: document.getElementById('confirmCancelBtn'), okBtn: document.getElementById('confirmOkBtn') };
+            let confirmCallback = () => {};
+            confirmModal.cancelBtn.addEventListener('click', () => confirmModal.element.classList.add('hidden'));
+            confirmModal.okBtn.addEventListener('click', () => { confirmModal.element.classList.add('hidden'); confirmCallback(); });
+            function showConfirm(title, message, onConfirm) {
+                confirmModal.title.textContent = title; confirmModal.message.textContent = message;
+                confirmCallback = onConfirm; confirmModal.element.classList.remove('hidden');
+            }
         });
     </script>
 </body>
