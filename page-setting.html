@@ -1,0 +1,27 @@
+<div id="page-setting" class="page-container">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <h2 class="text-xl font-bold mb-6 border-b pb-4">Settings</h2>
+        
+        <div class="space-y-6">
+            <!-- Recalculate Inventory Section -->
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">การจัดการข้อมูลสต็อก</h3>
+                <p class="mt-1 text-sm text-gray-600">
+                    ใช้ปุ่มนี้ในกรณีที่ข้อมูลสต็อกสินค้าไม่ตรงกับความเป็นจริง ระบบจะทำการล้างข้อมูลสต็อกเก่าและคำนวณยอดทั้งหมดใหม่จากประวัติการซื้อ (Expenses) ทั้งหมดในระบบ
+                </p>
+                <div class="mt-4">
+                    <button id="recalculateInventoryBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <i data-lucide="refresh-cw" class="w-5 h-5 mr-2"></i>
+                        <span>คำนวณสต็อกใหม่ทั้งหมด</span>
+                    </button>
+                </div>
+                <p class="mt-2 text-xs text-red-500">
+                    <strong>คำเตือน:</strong> การกระทำนี้ไม่สามารถย้อนกลับได้ และอาจใช้เวลาสักครู่ในการประมวลผลหากมีข้อมูลจำนวนมาก
+                </p>
+            </div>
+
+            <!-- Add other settings sections here in the future -->
+
+        </div>
+    </div>
+</div>
