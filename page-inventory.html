@@ -1,0 +1,52 @@
+<div id="page-inventory" class="page-container">
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h2 class="text-2xl font-bold">รายงานสินค้าคงเหลือ</h2>
+            <button id="goToReqFormBtn2" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+              <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+              <span>เบิกสินค้า</span>
+            </button>
+        </div>
+        <div id="inventory-summary" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+        <div class="bg-white p-4 rounded-lg border mb-6">
+          <div class="flex items-center space-x-4">
+            <i data-lucide="filter"></i>
+            <span>กรองข้อมูล:</span>
+            <select class="original-input w-48">
+              <option>คงเหลือ: มาก → น้อย</option>
+              <option>คงเหลือ: น้อย → มาก</option>
+            </select>
+              <select class="original-input w-48">
+                <option>ทั้งหมด</option>
+                <option>ปกติ</option>
+                <option>ใกล้หมด</option>
+                <option>หมดแล้ว</option>
+              </select>
+          </div>
+        </div>
+        <div id="inventory-table-container" class="overflow-x-auto">
+            <div class="flex items-center p-4 bg-gray-100 rounded-t-lg">
+              <i data-lucide="boxes" class="mr-2"></i>
+              <h3 class="text-lg font-bold">รายการสินค้าคงคลัง</h3>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">#</th>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">รายการ</th>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">จำนวนคงเหลือ</th>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ราคาเฉลี่ย</th>                  
+                  <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">มูลค่า Stock</th>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Safety Stock</th>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+                <tbody id="inventory-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+            </table>
+            <div id="inventory-loader" class="text-center p-8 hidden">
+              <div class="loader inline-block"></div>
+              </div>
+            <p id="inventory-placeholder" class="text-center text-gray-500 py-8">กำลังโหลดข้อมูลสินค้า...</p>
+        </div>
+    </div>
+</div>
