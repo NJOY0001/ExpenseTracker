@@ -14,7 +14,7 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; }
         .sidebar { transition: margin-left 0.3s ease-in-out; }
-        .main-content { transition: margin-left 0.3s ease-in-out; }
+        .main-content { transition: margin-left 0.3s ease-in-out; margin-left: 16rem; /* Default state */ }
         input[type="checkbox"] { transform: scale(1.2); }
         .page-container { display: none; }
         .page-container.active { display: block; }
@@ -23,115 +23,91 @@
         .sortable .sort-icon { display: none; }
         .sortable.sort-asc .sort-icon.asc, .sortable.sort-desc .sort-icon.desc { display: inline-block; }
         .original-input { @apply mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Searchable Dropdown */
+        .search-container { position: relative; }
+        .search-results { position: absolute; border: 1px solid #ddd; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; background: white; max-height: 200px; overflow-y: auto; }
+        .search-results div { padding: 8px 12px; cursor: pointer; }
+        .search-results div:hover { background-color: #f0f2f5; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-        <aside id="sidebar" class="bg-white text-gray-800 w-64 space-y-6 py-7 px-2 flex-shrink-0 sidebar">
-        <a href="#" class="text-2xl font-bold px-4 flex items-center space-x-2">
-            <i data-lucide="book-marked"></i>
-            <span>บันทึกรายจ่าย</span>
-        </a>
-        <nav>
-            <a href="#" data-target="page-expense-form" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg active"><i data-lucide="file-text"></i><span>Expense Form</span></a>
-            <a href="#" data-target="page-reports" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="bar-chart-3"></i><span>Reports</span></a>
-            <a href="#" data-target="page-inventory" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="boxes"></i><span>Inventory</span></a>
-            <a href="#" data-target="page-setting" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="settings"></i><span>Setting</span></a>
-        </nav>
+    <aside id="sidebar" class="bg-white text-gray-800 w-64 space-y-6 py-7 px-2 flex flex-col flex-shrink-0 sidebar fixed top-0 left-0 h-full z-20">
+        <div>
+            <a href="#" class="text-2xl font-bold px-4 flex items-center space-x-2">
+                <i data-lucide="book-marked"></i>
+                <span>บันทึกรายจ่าย</span>
+            </a>
+            <nav class="mt-6">
+                <a href="#" data-target="page-expense-form" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg active"><i data-lucide="file-text"></i><span>Expense Form</span></a>
+                <a href="#" data-target="page-requisition-form" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="clipboard-list"></i><span>Requisition Form</span></a>
+                <a href="#" data-target="page-reports" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="bar-chart-3"></i><span>Reports</span></a>
+                <a href="#" data-target="page-inventory" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="boxes"></i><span>Inventory</span></a>
+                <a href="#" data-target="page-setting" class="nav-link flex items-center space-x-3 py-3 px-4 rounded-lg"><i data-lucide="settings"></i><span>Setting</span></a>
+            </nav>
+        </div>
+        <div class="mt-auto p-4">
+            <a id="edit-code-link" href="https://script.google.com/home/projects/YOUR_SCRIPT_ID_HERE/edit" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 text-sm text-gray-500 hover:text-blue-600">
+                <i data-lucide="code-2"></i>
+                <span>Edit App Code</span>
+            </a>
+        </div>
     </aside>
 
     <!-- Main Content -->
     <div id="content" class="flex-1 flex flex-col overflow-hidden main-content">
-        <header class="flex justify-between items-center p-4 bg-white border-b">
-            <!-- NEW Sidebar Toggle Button -->
-            <button id="sidebar-toggle" class="text-gray-600 hover:text-gray-800">
-                <i data-lucide="panel-left-close"></i>
-            </button>
+        <header class="flex justify-between items-center p-4 bg-white border-b sticky top-0 z-10">
+            <button id="sidebar-toggle" class="text-gray-600 hover:text-gray-800"><i data-lucide="panel-left-close"></i></button>
             <h1 id="page-title" class="text-xl font-semibold">Expense Form</h1>
-            <div class="flex items-center space-x-4">
-                <i data-lucide="bell" class="text-gray-600"></i>
-                <img src="https://placehold.co/40x40/E2E8F0/4A5568?text=User" alt="User Avatar" class="rounded-full">
-            </div>
+            <div class="flex items-center space-x-4"><i data-lucide="bell" class="text-gray-600"></i><img src="https://placehold.co/40x40/E2E8F0/4A5568?text=User" alt="User Avatar" class="rounded-full"></div>
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6">
-            <!-- Expense Form Page -->
-            <div id="page-expense-form" class="page-container active">
-                <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <input type="hidden" id="editModeRefNo" value="">
-                    <h2 id="form-title" class="text-xl font-bold mb-6 border-b pb-4">ข้อมูลการจ่ายเงิน</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
-                        <!-- UPDATED Left Column -->
-                        <div class="space-y-4">
-                            <div><label for="recordDate" class="block text-sm font-medium text-gray-700">วันที่บันทึกข้อมูล</label><input type="text" id="recordDate" readonly class="original-input bg-gray-100 w-full"></div>
-                            <div><label for="purchaseDate" class="block text-sm font-medium text-gray-700">วันที่ซื้อสินค้า</label><input type="date" id="purchaseDate" class="original-input w-full"></div>
-                            <div><label for="supplierName" class="block text-sm font-medium text-gray-700">Supplier Name</label><input type="text" id="supplierName" placeholder="ชื่อผู้ขาย" class="original-input w-full"></div>
-                            <div><label for="docNo" class="block text-sm font-medium text-gray-700">Document No.</label><input type="text" id="docNo" placeholder="หมายเลขบิล" class="original-input w-full"></div>
-                            <div><label for="paymentType" class="block text-sm font-medium text-gray-700">ประเภทการจ่ายเงิน</label><select id="paymentType" class="original-input w-full"><option>Main account</option><option>Petty Cash</option></select></div>
-                            <div><label for="projectSubject" class="block text-sm font-medium text-gray-700">Project/Subject</label><input type="text" id="projectSubject" placeholder="โครงการ / เรื่อง" class="original-input w-full"></div>
-                        </div>
-                        <!-- Right Column -->
-                        <div class="space-y-4">
-                            <div><label for="internalRefNo" class="block text-sm font-medium text-gray-700">Internal Reference No.</label><input type="text" id="internalRefNo" readonly class="original-input bg-gray-100 w-full"></div>
-                            <div class="bg-gray-50 rounded-lg p-4 text-sm border space-y-2 mt-2">
-                                <h3 class="font-bold text-base mb-2">สรุปมูลค่า</h3>
-                                <div class="flex justify-between"><span>รวมมูลค่าสินค้า</span><span id="totalAmount" class="font-medium">฿0.00</span></div>
-                                <div class="flex justify-between"><span>มูลค่าสินค้ามี VAT</span><span id="vatIncludedAmount" class="font-medium">฿0.00</span></div>
-                                <div class="flex justify-between"><span>มูลค่าสินค้าไม่มี VAT</span><span id="vatExcludedAmount" class="font-medium">฿0.00</span></div>
-                                <div class="flex justify-between"><span>รวม VAT 7%</span><span id="vatAmount" class="font-medium">฿0.00</span></div>
-                                <div class="flex justify-between border-t pt-2 mt-2 text-base"><span class="font-bold">จำนวนเงินรวม</span><span id="grandTotal" class="font-bold text-blue-600">฿0.00</span></div>
-                                <div class="flex justify-between border-t pt-2 mt-2 text-xs text-gray-500"><span>รายการ: <span id="totalItemCount">0</span></span><span>มีVat: <span id="vatableItemCount">0</span></span><span>ไม่มีVat: <span id="nonVatableItemCount">0</span></span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto"><table id="itemsTable" class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-2/5">รายการ</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[10%]">จำนวน</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[10%]">หน่วย</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">ราคา/หน่วย</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">ราคารวม</th><th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">VAT 7%</th><th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase w-16">VAT</th><th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase w-16">ลบ</th></tr></thead><tbody class="bg-white divide-y divide-gray-200"></tbody></table></div>
-                    <button id="addRowBtn" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2"><i data-lucide="plus-circle" class="w-5 h-5"></i><span>เพิ่มรายการ</span></button>
-                    <div class="mt-8 flex justify-end space-x-4"><button id="cancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg">ยกเลิก</button><button id="saveBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center"><span id="saveBtnText">บันทึกข้อมูล</span><div id="loader" class="loader hidden ml-2" style="width: 20px; height: 20px; border-width: 2px;"></div></button></div>
-                </div>
-            </div>
-
-            <!-- Reports Page -->
-            <div id="page-reports" class="page-container">
-                <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <h2 class="text-xl font-bold mb-6 border-b pb-4">รายงานการซื้อ (By Bill)</h2>
-                    <div class="flex flex-wrap items-end gap-4 mb-6">
-                        <div><label for="reportStartDate" class="block text-sm font-medium text-gray-700">วันที่เริ่มต้น</label><input type="date" id="reportStartDate" class="original-input"></div>
-                        <div><label for="reportEndDate" class="block text-sm font-medium text-gray-700">วันที่สิ้นสุด</label><input type="date" id="reportEndDate" class="original-input"></div>
-                        <button id="generateReportBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="search" class="w-5 h-5 mr-2"></i><span>สร้างรายงาน</span></button>
-                        <div class="flex-grow"></div>
-                        <button id="exportPdfBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center hidden"><i data-lucide="file-text" class="w-5 h-5 mr-2"></i><span>Export to PDF</span></button>
-                        <button id="exportExcelBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center hidden"><i data-lucide="file-spreadsheet" class="w-5 h-5 mr-2"></i><span>Export to Excel</span></button>
-                        <div id="reportLoader" class="loader hidden ml-4" style="width: 30px; height: 30px; border-width: 3px;"></div>
-                    </div>
-                    <div id="reportResult" class="overflow-x-auto">
-                        <p id="reportPlaceholder" class="text-center text-gray-500 py-8">กรุณาเลือกช่วงวันที่และกด "สร้างรายงาน"</p>
-                        <table id="reportTable" class="min-w-full divide-y divide-gray-200 hidden">
-                            <thead class="bg-gray-50"><tr><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="buyDate">Buy Date <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="payBy">Pay by <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="internalNo">Internal No. <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="supplierName">Supplier Name <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase" data-sort="docNo">Doc.No <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="itemCount"># <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="amount">Amount <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="vat">Vat7% <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="sortable px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase" data-sort="totalAmount">Total Amount <i class="sort-icon asc" data-lucide="arrow-up"></i><i class="sort-icon desc" data-lucide="arrow-down"></i></th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
-                            <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200"></tbody>
-                            <tfoot class="bg-gray-100"><tr><th colspan="6" class="px-4 py-3 text-right text-sm font-bold">Total:</th><th id="reportTotalAmount" class="px-4 py-3 text-right text-sm font-bold"></th><th id="reportTotalVat" class="px-4 py-3 text-right text-sm font-bold"></th><th id="reportGrandTotal" class="px-4 py-3 text-right text-sm font-bold"></th><th></th></tr></tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div id="page-inventory" class="page-container"><div class="bg-white p-6 rounded-xl shadow-lg">Inventory Page</div></div>
-            <div id="page-setting" class="page-container"><div class="bg-white p-6 rounded-xl shadow-lg">Setting Page</div></div>
+            <!-- Page content will be injected here -->
+            <?!= include('page_expense_form'); ?>
+            <?!= include('page_requisition_form'); ?>
+            <?!= include('page_reports'); ?>
+            <?!= include('page_inventory'); ?>
+            <?!= include('page_setting'); ?>
         </main>
     </div>
+    
+    <!-- Modals -->
     <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50"><div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/3 text-center"><div id="modalIcon"></div><h3 id="modalTitle" class="text-xl font-bold mt-4"></h3><p id="modalMessage" class="text-gray-600 mt-2"></p><button id="modalCloseBtn" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">ตกลง</button></div></div>
     <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50"><div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/3"><h3 id="confirmTitle" class="text-lg font-bold">ยืนยันการกระทำ</h3><p id="confirmMessage" class="text-gray-600 mt-2 py-4"></p><div class="flex justify-end space-x-4 mt-4"><button id="confirmCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">ยกเลิก</button><button id="confirmOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">ยืนยัน</button></div></div></div>
+    
+    <div id="supplierModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 lg:w-1/3">
+            <h3 class="text-lg font-bold mb-4">Create New Supplier</h3>
+            <div class="space-y-4">
+                <div><label for="newSupplierName" class="block text-sm font-medium text-gray-700">Supplier Name <span class="text-red-500">*</span></label><input type="text" id="newSupplierName" class="original-input"></div>
+                <div><label for="newSupplierInitial" class="block text-sm font-medium text-gray-700">Initial Name <span class="text-red-500">*</span></label><input type="text" id="newSupplierInitial" class="original-input"></div>
+                <div><label for="newSupplierAddress" class="block text-sm font-medium text-gray-700">Address</label><textarea id="newSupplierAddress" rows="2" class="original-input"></textarea></div>
+                <div><label for="newSupplierTel" class="block text-sm font-medium text-gray-700">Tel.</label><input type="text" id="newSupplierTel" class="original-input"></div>
+                <div><label for="newSupplierCreateBy" class="block text-sm font-medium text-gray-700">Create By</label><input type="text" id="newSupplierCreateBy" class="original-input"></div>
+            </div>
+            <div class="flex justify-end space-x-4 mt-6">
+                <button id="supplierModalCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">ยกเลิก</button>
+                <button id="supplierModalSaveBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><span id="supplierSaveBtnText">Save</span><div id="supplierLoader" class="loader hidden ml-2"></div></button>
+            </div>
+        </div>
+    </div>
 
+    <!-- Main JavaScript Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
             const { jsPDF } = window.jspdf;
             
-            // --- Global Elements & State ---
             const pageTitle = document.getElementById('page-title');
             let reportDataCache = [];
             let currentSort = { key: 'buyDate', order: 'desc' };
+            let inventoryItemMaster = [];
+            let supplierList = [];
 
-            // --- Sidebar Toggle ---
             const sidebar = document.getElementById('sidebar');
             const content = document.getElementById('content');
             const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -139,7 +115,7 @@
                 const isCollapsed = sidebar.style.marginLeft === '-16rem';
                 if (isCollapsed) {
                     sidebar.style.marginLeft = '0';
-                    content.style.marginLeft = '0rem';
+                    content.style.marginLeft = '16rem';
                     sidebarToggle.innerHTML = '<i data-lucide="panel-left-close"></i>';
                 } else {
                     sidebar.style.marginLeft = '-16rem';
@@ -149,8 +125,6 @@
                 lucide.createIcons();
             });
 
-
-            // --- Page Navigation ---
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', e => {
                     e.preventDefault();
@@ -158,8 +132,13 @@
                     document.querySelectorAll('.page-container').forEach(p => p.classList.toggle('active', p.id === targetId));
                     document.querySelectorAll('.nav-link').forEach(n => n.classList.toggle('active', n === link));
                     pageTitle.textContent = link.querySelector('span').textContent;
-                    if (targetId !== 'page-expense-form') { expenseForm.reset(); }
+                    if (targetId === 'page-inventory') { inventory.load(); }
+                    if (targetId === 'page-requisition-form') { requisitionForm.initialize(); }
+                    if (targetId !== 'page-expense-form') { expenseForm.reset(); } else { expenseForm.loadSuppliers(); }
                 });
+            });
+            document.getElementById('goToReqFormBtn2').addEventListener('click', () => {
+                document.querySelector('.nav-link[data-target="page-requisition-form"]').click();
             });
 
             // --- Expense Form Logic ---
@@ -168,6 +147,7 @@
                 editModeRefNoInput: document.getElementById('editModeRefNo'),
                 recordDateInput: document.getElementById('recordDate'),
                 purchaseDateInput: document.getElementById('purchaseDate'),
+                supplierDropdown: document.getElementById('supplierName'),
                 itemsTableBody: document.querySelector('#itemsTable tbody'),
                 addRowBtn: document.getElementById('addRowBtn'),
                 saveBtn: document.getElementById('saveBtn'),
@@ -182,6 +162,28 @@
                     this.addRowBtn.addEventListener('click', () => this.addRow());
                     this.cancelBtn.addEventListener('click', () => this.reset());
                     this.saveBtn.addEventListener('click', () => this.save());
+                    this.loadSuppliers();
+                    document.getElementById('createNewSupplierBtn').addEventListener('click', () => supplierModal.show());
+                },
+                loadSuppliers(selectedSupplier = null) {
+                    google.script.run.withSuccessHandler(res => {
+                        if (res.status === 'success') {
+                            supplierList = res.data;
+                            this.populateSupplierDropdown(selectedSupplier);
+                        }
+                    }).getSupplierNames();
+                },
+                populateSupplierDropdown(selectedValue = null) {
+                    this.supplierDropdown.innerHTML = '<option value="">-- เลือก Supplier --</option>';
+                    supplierList.forEach(name => {
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        this.supplierDropdown.appendChild(option);
+                    });
+                    if (selectedValue) {
+                        this.supplierDropdown.value = selectedValue;
+                    }
                 },
                 updateDateTime() { if (!this.editModeRefNoInput.value) this.recordDateInput.value = new Date().toLocaleString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); },
                 addRow(item = {}) {
@@ -238,7 +240,7 @@
                     
                     document.getElementById('internalRefNo').value = data.header.internalRefNo;
                     document.getElementById('purchaseDate').value = data.header.purchaseDate;
-                    document.getElementById('supplierName').value = data.header.supplierName;
+                    this.supplierDropdown.value = data.header.supplierName;
                     document.getElementById('docNo').value = data.header.docNo;
                     document.getElementById('paymentType').value = data.header.paymentType;
                     document.getElementById('projectSubject').value = data.header.projectSubject;
@@ -250,10 +252,10 @@
                 },
                 save() {
                     const isUpdate = !!this.editModeRefNoInput.value;
-                    const supplierName = document.getElementById('supplierName').value;
+                    const supplierName = this.supplierDropdown.value;
                     const docNo = document.getElementById('docNo').value;
                     
-                    if (!supplierName || !docNo) { showNotification('error', 'ข้อมูลไม่ครบถ้วน', 'กรุณากรอก Supplier Name และ Document No.'); return; }
+                    if (!supplierName || !docNo) { showNotification('error', 'ข้อมูลไม่ครบถ้วน', 'กรุณาเลือก Supplier และกรอก Document No.'); return; }
                     
                     this.saveBtn.disabled = true; this.saveBtnText.classList.add('hidden'); this.loader.classList.remove('hidden');
 
@@ -273,30 +275,141 @@
                         
                         const serverFunction = isUpdate ? 'updateData' : 'saveData';
                         google.script.run
-                            .withSuccessHandler(res => { if (res.status === 'success') { showNotification('success', isUpdate ? 'อัปเดตสำเร็จ!' : 'บันทึกสำเร็จ!', res.message); this.reset(); if(isUpdate) { document.querySelector('.nav-link[data-target="page-reports"]').click(); reports.generate(); } } else { showNotification('error', 'เกิดข้อผิดพลาด!', res.message); } this.resetSaveButton(); })
+                            .withSuccessHandler(res => { if (res.status === 'success') { showNotification('success', isUpdate ? 'อัปเดตสำเร็จ!' : 'บันทึกสำเร็จ!', res.message); this.reset(); if(isUpdate) { document.querySelector('.nav-link[data-target="page-reports"]').click(); reports.generate(); } inventory.isLoaded = false; } else { showNotification('error', 'เกิดข้อผิดพลาด!', res.message); } this.resetSaveButton(); })
                             .withFailureHandler(err => { showNotification('error', 'เกิดข้อผิดพลาดรุนแรง!', err.message); this.resetSaveButton(); })
                             [serverFunction]({ header: headerData, items: items });
                     };
-
-                    if (!isUpdate) {
-                        google.script.run
-                            .withSuccessHandler(isDuplicate => {
-                                if (isDuplicate) {
-                                    showNotification('error', 'บิลซ้ำ', 'มีบิลจาก Supplier นี้ด้วย Document No. นี้อยู่แล้ว');
-                                    this.resetSaveButton();
-                                } else {
-                                    proceedWithSave();
-                                }
-                            })
-                            .withFailureHandler(err => { showNotification('error', 'ตรวจสอบบิลซ้ำไม่สำเร็จ', err.message); this.resetSaveButton(); })
-                            .checkDuplicateBill(supplierName, docNo, '');
-                    } else {
-                        proceedWithSave();
-                    }
+                    
+                    const currentRefNo = isUpdate ? this.editModeRefNoInput.value : '';
+                    google.script.run
+                        .withSuccessHandler(isDuplicate => {
+                            if (isDuplicate) {
+                                showNotification('error', 'บิลซ้ำ', 'มีบิลจาก Supplier นี้ด้วย Document No. นี้อยู่แล้ว');
+                                this.resetSaveButton();
+                            } else {
+                                proceedWithSave();
+                            }
+                        })
+                        .withFailureHandler(err => { showNotification('error', 'ตรวจสอบบิลซ้ำไม่สำเร็จ', err.message); this.resetSaveButton(); })
+                        .checkDuplicateBill(supplierName, docNo, currentRefNo);
                 },
                 resetSaveButton() { this.saveBtn.disabled = false; this.saveBtnText.classList.remove('hidden'); this.loader.classList.add('hidden'); }
             };
             expenseForm.initialize();
+
+            // --- Requisition Form Logic ---
+            const requisitionForm = {
+                reqNoInput: document.getElementById('reqNo'),
+                reqDateInput: document.getElementById('reqDate'),
+                requesterInput: document.getElementById('requester'),
+                itemsTableBody: document.getElementById('reqItemsTable').querySelector('tbody'),
+                addRowBtn: document.getElementById('addReqRowBtn'),
+                saveBtn: document.getElementById('saveReqBtn'),
+                cancelBtn: document.getElementById('cancelReqBtn'),
+                saveBtnText: document.getElementById('saveReqBtnText'),
+                loader: document.getElementById('reqLoader'),
+                rowCount: 0,
+
+                initialize() {
+                    this.reset();
+                    this.addRowBtn.addEventListener('click', () => this.addRow());
+                    this.cancelBtn.addEventListener('click', () => this.reset());
+                    this.saveBtn.addEventListener('click', () => this.save());
+                    if (inventoryItemMaster.length === 0) {
+                        google.script.run.withSuccessHandler(res => {
+                            if (res.status === 'success') inventoryItemMaster = res.data;
+                        }).getInventoryItemNames();
+                    }
+                },
+                reset() {
+                    this.requesterInput.value = '';
+                    this.reqDateInput.valueAsDate = new Date();
+                    this.itemsTableBody.innerHTML = '';
+                    this.rowCount = 0;
+                    google.script.run.withSuccessHandler(reqNo => { this.reqNoInput.value = reqNo; }).generateRequisitionNo();
+                    this.addRow();
+                },
+                addRow() {
+                    this.rowCount++;
+                    const row = this.itemsTableBody.insertRow();
+                    row.innerHTML = `
+                        <td class="px-2 py-2 text-sm text-gray-500">${this.rowCount}</td>
+                        <td class="px-4 py-2">
+                            <div class="search-container">
+                                <input type="text" placeholder="-- ค้นหารายการ --" class="original-input item-desc-search">
+                                <div class="search-results hidden"></div>
+                            </div>
+                        </td>
+                        <td class="px-2 py-2"><input type="number" value="1" min="1" class="original-input item-qty text-right"></td>
+                        <td class="px-2 py-2"><input type="text" placeholder="หน่วย" class="original-input item-unit bg-gray-100" readonly></td>
+                        <td class="px-2 py-2 text-center"><button type="button" class="delete-row text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button></td>
+                    `;
+                    lucide.createIcons();
+                    this.attachSearchListeners(row);
+                    row.querySelector('.delete-row').addEventListener('click', e => e.currentTarget.closest('tr').remove());
+                },
+                attachSearchListeners(row) {
+                    const searchInput = row.querySelector('.item-desc-search');
+                    const searchResults = row.querySelector('.search-results');
+                    const unitInput = row.querySelector('.item-unit');
+
+                    searchInput.addEventListener('input', () => {
+                        const filter = searchInput.value.toLowerCase();
+                        searchResults.innerHTML = '';
+                        if (filter) {
+                            const filteredItems = inventoryItemMaster.filter(item => item.name.toLowerCase().includes(filter));
+                            if (filteredItems.length > 0) {
+                                searchResults.classList.remove('hidden');
+                                filteredItems.forEach(item => {
+                                    const div = document.createElement('div');
+                                    div.textContent = item.name;
+                                    div.dataset.unit = item.unit;
+                                    div.addEventListener('click', () => {
+                                        searchInput.value = item.name;
+                                        unitInput.value = item.unit;
+                                        searchResults.classList.add('hidden');
+                                    });
+                                    searchResults.appendChild(div);
+                                });
+                            } else {
+                                searchResults.classList.add('hidden');
+                            }
+                        } else {
+                            searchResults.classList.add('hidden');
+                        }
+                    });
+                    searchInput.addEventListener('blur', () => {
+                        setTimeout(() => searchResults.classList.add('hidden'), 200);
+                    });
+                },
+                save() {
+                    this.saveBtn.disabled = true; this.saveBtnText.classList.add('hidden'); this.loader.classList.remove('hidden');
+                    const headerData = {
+                        reqNo: this.reqNoInput.value,
+                        reqDate: this.reqDateInput.value,
+                        requester: this.requesterInput.value,
+                    };
+                    if (!headerData.reqDate || !headerData.requester) { showNotification('error', 'ข้อมูลไม่ครบถ้วน', 'กรุณากรอกวันที่และชื่อผู้เบิก'); this.resetSaveButton(); return; }
+                    
+                    const items = Array.from(this.itemsTableBody.rows).map(row => ({
+                        description: row.querySelector('.item-desc-search').value,
+                        quantity: parseFloat(row.querySelector('.item-qty').value) || 0,
+                        unit: row.querySelector('.item-unit').value,
+                    })).filter(item => item.description && item.quantity > 0);
+
+                    if (items.length === 0) { showNotification('error', 'ไม่มีรายการ', 'กรุณาเพิ่มรายการที่ต้องการเบิก'); this.resetSaveButton(); return; }
+                    
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            if(res.status === 'success') { showNotification('success', 'บันทึกสำเร็จ', res.message); this.reset(); inventory.isLoaded = false; }
+                            else { showNotification('error', 'ผิดพลาด', res.message); }
+                            this.resetSaveButton();
+                        })
+                        .withFailureHandler(err => { showNotification('error', 'ผิดพลาด', err.message); this.resetSaveButton(); })
+                        .saveRequisitionData({header: headerData, items: items});
+                },
+                resetSaveButton() { this.saveBtn.disabled = false; this.saveBtnText.classList.remove('hidden'); this.loader.classList.add('hidden'); }
+            };
 
             // --- Reports Logic ---
             const reports = {
@@ -398,8 +511,6 @@
                 },
                 exportToPdf() {
                     const doc = new jsPDF();
-                    // IMPORTANT: Ensure the font is loaded and registered before use.
-                    // This is a simplified example. For production, you might need to handle font loading more robustly.
                     doc.addFont('https://cdnjs.cloudflare.com/ajax/libs/Sarabun/0.1.0/Sarabun-Regular.ttf', 'Sarabun', 'normal');
                     doc.setFont('Sarabun');
                     
@@ -444,6 +555,159 @@
                 }
             };
             reports.initialize();
+            
+            // --- Inventory Logic ---
+            const inventory = {
+                summaryContainer: document.getElementById('inventory-summary'),
+                tableBody: document.getElementById('inventory-table-body'),
+                loader: document.getElementById('inventory-loader'),
+                placeholder: document.getElementById('inventory-placeholder'),
+                isLoaded: false,
+
+                load() {
+                    if (this.isLoaded) return;
+                    this.loader.classList.remove('hidden');
+                    this.placeholder.classList.add('hidden');
+
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            this.loader.classList.add('hidden');
+                            if (res.status === 'success') {
+                                this.render(res.data);
+                                this.isLoaded = true;
+                            } else {
+                                this.placeholder.textContent = `เกิดข้อผิดพลาด: ${res.message}`;
+                                this.placeholder.classList.remove('hidden');
+                            }
+                        })
+                        .withFailureHandler(err => {
+                             this.loader.classList.add('hidden');
+                             this.placeholder.textContent = `เกิดข้อผิดพลาดในการเชื่อมต่อ: ${err.message}`;
+                             this.placeholder.classList.remove('hidden');
+                        })
+                        .getInventoryData();
+                },
+                render(data) {
+                    this.placeholder.classList.add('hidden');
+                    this.summaryContainer.innerHTML = `
+                        <div class="bg-blue-100 p-4 rounded-lg flex items-center"><i data-lucide="package" class="w-10 h-10 text-blue-500 mr-4"></i><div><div class="text-2xl font-bold">${data.summary.totalItems}</div><div class="text-gray-600">รายการสินค้า</div></div></div>
+                        <div class="bg-green-100 p-4 rounded-lg flex items-center"><i data-lucide="dollar-sign" class="w-10 h-10 text-green-500 mr-4"></i><div><div class="text-2xl font-bold">฿${data.summary.totalStockValue.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div><div class="text-gray-600">มูลค่า Stock</div></div></div>
+                        <div class="bg-yellow-100 p-4 rounded-lg flex items-center"><i data-lucide="alert-triangle" class="w-10 h-10 text-yellow-500 mr-4"></i><div><div class="text-2xl font-bold">${data.summary.lowStockCount}</div><div class="text-gray-600">ใกล้หมด</div></div></div>
+                        <div class="bg-red-100 p-4 rounded-lg flex items-center"><i data-lucide="package-x" class="w-10 h-10 text-red-500 mr-4"></i><div><div class="text-2xl font-bold">${data.summary.outOfStockCount}</div><div class="text-gray-600">หมดแล้ว</div></div></div>
+                    `;
+                    this.tableBody.innerHTML = '';
+                    data.items.forEach((item, index) => {
+                        const row = this.tableBody.insertRow();
+                        row.innerHTML = `
+                            <td class="px-6 py-4 text-sm">${index + 1}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <div class="font-bold">${item.name}</div>
+                                <div class="text-xs text-gray-500">รหัส: ${item.code} | หน่วย: ${item.unit}</div>
+                                <div class="text-xs text-green-600">฿${item.avgPrice.toFixed(2)}/หน่วย</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-bold text-lg">${item.quantity.toLocaleString('th-TH')} <span class="text-xs font-normal text-gray-500">${item.unit}</span></td>
+                            <td class="px-6 py-4 text-sm">฿${item.stockValue.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td class="px-6 py-4 text-sm">${item.safetyStock.toLocaleString('th-TH')}</td>
+                            <td class="px-6 py-4 text-sm"><span class="px-3 py-1 rounded-full text-xs font-medium text-white bg-${item.statusColor}-500">${item.status}</span></td>
+                        `;
+                    });
+                    lucide.createIcons();
+                }
+            };
+            
+            // --- Supplier Modal Logic ---
+            const supplierModal = {
+                modal: document.getElementById('supplierModal'),
+                saveBtn: document.getElementById('supplierModalSaveBtn'),
+                cancelBtn: document.getElementById('supplierModalCancelBtn'),
+                saveBtnText: document.getElementById('supplierSaveBtnText'),
+                loader: document.getElementById('supplierLoader'),
+                nameInput: document.getElementById('newSupplierName'),
+                initialInput: document.getElementById('newSupplierInitial'),
+                addressInput: document.getElementById('newSupplierAddress'),
+                telInput: document.getElementById('newSupplierTel'),
+                createByInput: document.getElementById('newSupplierCreateBy'),
+                
+                initialize() {
+                    this.cancelBtn.addEventListener('click', () => this.hide());
+                    this.saveBtn.addEventListener('click', () => this.save());
+                },
+                show() { this.modal.classList.remove('hidden'); },
+                hide() { this.modal.classList.add('hidden'); this.reset(); },
+                reset() {
+                    this.nameInput.value = '';
+                    this.initialInput.value = '';
+                    this.addressInput.value = '';
+                    this.telInput.value = '';
+                    this.createByInput.value = '';
+                },
+                save() {
+                    const supplierData = {
+                        name: this.nameInput.value.trim(),
+                        initial: this.initialInput.value.trim(),
+                        address: this.addressInput.value.trim(),
+                        tel: this.telInput.value.trim(),
+                        createdBy: this.createByInput.value.trim()
+                    };
+                    if (!supplierData.name || !supplierData.initial) {
+                        showNotification('error', 'ข้อมูลไม่ครบถ้วน', 'กรุณากรอก Supplier Name และ Initial Name');
+                        return;
+                    }
+                    this.saveBtn.disabled = true; this.saveBtnText.classList.add('hidden'); this.loader.classList.remove('hidden');
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            if (res.status === 'success') {
+                                showNotification('success', 'สำเร็จ', res.message);
+                                expenseForm.loadSuppliers(res.newSupplier.name);
+                                this.hide();
+                            } else {
+                                showNotification('error', 'ผิดพลาด', res.message);
+                            }
+                            this.resetSaveButton();
+                        })
+                        .withFailureHandler(err => {
+                            showNotification('error', 'ผิดพลาดรุนแรง', err.message);
+                            this.resetSaveButton();
+                        })
+                        .saveNewSupplier(supplierData);
+                },
+                resetSaveButton() {
+                    this.saveBtn.disabled = false;
+                    this.saveBtnText.classList.remove('hidden');
+                    this.loader.classList.add('hidden');
+                }
+            };
+            supplierModal.initialize();
+
+            // --- Settings Logic ---
+            const settings = {
+                recalculateBtn: document.getElementById('recalculateInventoryBtn'),
+                initialize() {
+                    if(this.recalculateBtn) {
+                        this.recalculateBtn.addEventListener('click', this.handleRecalculate);
+                    }
+                },
+                handleRecalculate() {
+                    showConfirm('ยืนยันการคำนวณใหม่', 'การกระทำนี้จะลบข้อมูลสต็อกปัจจุบันทั้งหมด และสร้างใหม่จากข้อมูลการซื้อทั้งหมดในระบบ ต้องการดำเนินการต่อหรือไม่?', () => {
+                        showNotification('info', 'กำลังคำนวณ...', 'ระบบกำลังประมวลผลข้อมูลสต็อกใหม่ทั้งหมด');
+                        google.script.run
+                            .withSuccessHandler(res => {
+                                if (res.status === 'success') {
+                                    showNotification('success', 'สำเร็จ', res.message);
+                                    inventory.isLoaded = false; // Force reload on next visit
+                                } else {
+                                    showNotification('error', 'ผิดพลาด', res.message);
+                                }
+                            })
+                            .withFailureHandler(err => {
+                                showNotification('error', 'ผิดพลาดรุนแรง', err.message);
+                            })
+                            .recalculateInventory();
+                    });
+                }
+            };
+            settings.initialize();
+
 
             // --- Modals ---
             const notificationModal = { element: document.getElementById('notificationModal'), icon: document.getElementById('modalIcon'), title: document.getElementById('modalTitle'), message: document.getElementById('modalMessage'), closeBtn: document.getElementById('modalCloseBtn') };
